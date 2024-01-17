@@ -4,5 +4,4 @@ numpy
 seaborn
 matplotlib
 datetime
-calendar
-plotly.express
+plotly
