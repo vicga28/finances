@@ -7,3 +7,5 @@ datetime
 plotly
 openpyxl
 pydrive
+gcsfs
+st-files-connection
