@@ -9,9 +9,19 @@ import seaborn as sns
 import plotly.graph_objs as go
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+from st_files_connection import FilesConnection
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded', page_title='Finances', page_icon='📈',
                    menu_items={'About':'Primera versió'})
+
+# Create connection object and retrieve file contents.
+# Specify input format is a csv and to cache the result for 600 seconds.
+conn = st.connection('gcs', type=FilesConnection)
+df = conn.read("Llibreta_estalvis.xlsx", input_format="xlsx", ttl=600)
+
+# Print results.
+for row in df.itertuples():
+    st.write(f"{row.Owner} has a :{row.Pet}:")
 
 #Agafar el excel del Google Drive
 gauth = GoogleAuth()
