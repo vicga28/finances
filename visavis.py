@@ -6,19 +6,20 @@ import calendar
 import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.graph_objs as go
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded', page_title='Finances', page_icon='📈',
                    menu_items={'About':'Primera versió'})
 
-# '''**Què puc fer si el meu banc no apareix?**<br>\
-#                                Estem encara introduïnt diferents bancs, si us plau, tingues paciència. Estem intentant introduir tots els bancs possibles.<br>
-#                                **Puc fixar un límit mensual i veure si la meva previsió es troba dins del meu límit?**<br>\
-#                                Sí, és una funció que volem implementar. Tingues paciència i aviat la veuràs.'''
-
 #Agafar el excel del Google Drive
-url = 'https://docs.google.com/spreadsheets/d/1-KM3qtwtaNIjkozkcwQl0IpO2egAu3-W/edit?usp=sharing&ouid=104408176399032842446&rtpof=true&sd=true'
-path = 'https://drive.google.com/uc?export=download&id='+url.split('/')[-2]
-df = pd.read_excel(path, sheet_name='DATA')
+gauth = GoogleAuth()
+gauth.LocalWebserverAuth()
+drive = GoogleDrive(gauth)
+fileDownloaded = drive.CreateFile({'id':'1-KM3qtwtaNIjkozkcwQl0IpO2egAu3-W'})
+fileDownloaded.GetContentFile('Llibreta_estalvis.xlsx')
+df = pd.read_excel('Llibreta_estalvis.xlsx', sheet_name = 'DATA')
 
 #Generació id categories per a fer servir després pels inputs
 id_tipus = ['Despesa', 'Estalvi', 'Ingressos']
@@ -41,10 +42,48 @@ num_days = calendar.monthrange(year_actual, month_actual)[-1]
 
 #Generació DataFrames
 
+#Generació d'un primer DataFrame amb una nova columna que és la data en format datetime i eliminar categories de Income i Estalvi que no és fan servir
+df_date = df.copy()
+id_cat_df = set(df.Categoria.unique())
+id_cat_out = id_cat_df.difference(id_cat_total)
+df_date['Categoria'] = df_date['Categoria'].replace(id_cat_out, '')
+df_date['Data'] = df['Any'].astype('string') + '-' + df['Mes'].astype('string') + '-' + df['Dia'].astype('string')
+df_date = df_date.filter(['Data', 'Tipus', 'Categoria', 'Import']).groupby(by=['Data', 'Tipus', 'Categoria']).sum().reset_index()
+df_date['Data'] = pd.to_datetime(df_date['Data'], dayfirst=True, format='%Y-%m-%d')
+df_date = df_date.groupby(by=['Data', 'Tipus', 'Categoria']).sum()
+
+#Generació d'un segon DataFrame (dummy) on es generen entrades per a cada dia i categoria amb import 0
+first_day = df_date.index[0][0] #Aquí es considera el primer dia on es té informació, també es pot considerar incloure tot el primer any
+last_day = date(year_actual, 12, 31)
+time_series = pd.date_range(start=first_day, end=last_day)
+df_zero = pd.DataFrame([0], columns=['Import'])
+
+i=0
+for data in time_series:
+    for tipus in id_tip:
+        if tipus in id_tipus_gast:
+            for cat in dict_gast[tipus]:
+                df_zero.loc[i, 'Data'] = data
+                df_zero.loc[i, 'Tipus'] = tipus
+                df_zero.loc[i, 'Categoria'] = cat
+                df_zero.loc[i, 'Import'] = 0
+                i += 1
+        else:
+            df_zero.loc[i, 'Data'] = data
+            df_zero.loc[i, 'Tipus'] = tipus
+            df_zero.loc[i, 'Categoria'] = ''
+            df_zero.loc[i, 'Import'] = 0
+            i += 1
+            
+#Unió dels dos DataFrames i retornar un únic per tenir valors de 0 per les categories on no hi ha despeses per un determinat mes
+bf = df_zero.merge(df_date, on=['Data', 'Tipus', 'Categoria'], how='left')
+bf = bf.fillna(0).drop(columns='Import_x').rename(columns={'Import_y':'Import'}).set_index('Data')
+bf['Any'] = bf.index.year
+bf['Mes'] = bf.index.month
+
 #DataFrame amb despeses per categoria mensuals
-bf = df.copy()
+bf = bf.copy()
 bf = bf.filter(['Any', 'Mes', 'Tipus', 'Categoria', 'Import'])
-# bf = bf.loc[(bf.Import !=0)]
 bf = bf.groupby(by=['Any', 'Mes', 'Tipus', 'Categoria'], as_index=False, observed=True).sum()
 
 #Dataframe amb despeses per categoria anuals 
@@ -82,10 +121,10 @@ with st.sidebar.form('Seleccio_mes', border=False):
     sel_month = st.selectbox('Mes:', id_months, index=None)
     year = st.selectbox('Any:', id_years, index=None)
     month_selection = st.form_submit_button('Selecciona')
+if year is None:
+    year = year_actual
 if sel_month is None:
     month = month_actual
-    if year is None:
-        year = year_actual
 else:
     month = get_month_number(sel_month)
 last_month, last_year = get_last_month(month, year)
@@ -110,45 +149,59 @@ else:
 st.title('Dashboad finances')
 st.markdown("### **%s %s**" % (dict_month[month], year))
 
+#Metrics amb diferents medidors a triar
 col10, col11, col12, col13 = st.columns(4)
 
 with col10:
+    #Gast en oci en el mes seleccionat
     st.metric(label='Oci',
             value='{:,.2f}€'.format(gast_mes(bf, month, year, 'Oci')),
             delta='{:,.2f}€'.format(gast_mes(bf, month, year, 'Oci')-gast_mes(bf, last_month, last_year, 'Oci')),
             delta_color='inverse')
 with col11:
+    #Gast fixe en el mes seleccionat
     st.metric(label='Fixe',
             value='{:,.2f}€'.format(gast_mes(bf, month, year, 'Fixe')),
             delta='{:,.2f}€'.format(gast_mes(bf, month, year, 'Fixe')-gast_mes(bf, last_month, last_year, 'Fixe')),
             delta_color='inverse')
 with col12:
+    #Despeses totals del mes seleccionat
     st.metric(label='Despesa mensual',
             value='{:,.2f}€'.format(gast_mes(bf, month, year, 'Oci')+gast_mes(bf, month, year, 'Fixe')),
             delta='{:,.2f}€'.format(gast_mes(bf, month, year, 'Oci')+gast_mes(bf, month, year, 'Fixe')-gast_mes(bf, last_month, last_year, 'Oci')-gast_mes(bf, last_month, last_year, 'Fixe')),
             delta_color='inverse')
 with col13:
+    #Previsió de gast del mes present
+    prev = gast_mes(bf, month, year, 'Oci')*num_days/day_actual+gast_mes(bf, month, year, 'Fixe')
     st.metric(label='Previsió gast mensual',
-            value='{:,.2f}€'.format(gast_mes(bf, month, year, 'Oci')*num_days/day_actual+gast_mes(bf, month, year, 'Fixe')),
-            delta='{:,.2f}€'.format(gast_mes(bf, last_month, last_year, 'Income')-gast_mes(bf, month, year, 'Oci')*num_days/day_actual-gast_mes(bf, month, year, 'Fixe')),
+            value='{:,.2f}€'.format(prev),
+            delta='{:,.2f}€'.format(gast_mes(bf, last_month, last_year, 'Income')-prev),
             delta_color='normal')
 
+#Gràfiques
 col21, col22 = st.columns([6,4])
 
 with col21:
     tab1, tab2 = st.tabs(['Vista anual', 'Històric'])
     with tab1:
-        yf = bf.query('Any == @year').groupby(by=['Mes', 'Tipus'], as_index=False, observed=True).sum()
+        yf = bf.query('Any == @year').groupby(by=['Mes', 'Tipus'], as_index=False, observed=True).sum().sort_values(by=['Mes', 'Tipus'])
+        k = 0
+        for i in range(1,13):
+            for tipus in yf.Tipus.unique():  
+                yf.loc[k, 'Mean'] = gast_any(bf,year,tipus) / 12
+                k += 1
+        mean_gast = yf.query('Tipus != "Income"').groupby(by=['Mes'], as_index=False, observed=True).sum()
         yf['Cost'] = 1
         yf['Cost'] = yf['Cost'].where(yf['Tipus'] == 'Income', -1)
         st.markdown('### Balanç anual %s' % (year))
-        # fig = px.bar(yf, x='Cost', y='Import', color = 'Tipus', hover_data='Tipus', barmode='group', facet_col='Mes')
-        # fig.update_traces(hovertemplate='%{customdata} <br>%{value:.02f} €')
-        # fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
-        # fig.update_layout(yaxis_ticksuffix='€',yaxis_tickformat=',.')
-        # st.plotly_chart(fig, use_container_width=True)
         fig = px.bar(yf, x='Mes', y='Import', color = 'Tipus', hover_data='Tipus', barmode='group')
         fig.update_traces(hovertemplate='%{customdata} <br>%{value:,.0f} €')
+        fig.add_trace(go.Scatter(x=yf.query('Tipus == "Income"')['Mes'], y=yf.query('Tipus == "Income"')['Import'],
+                                 name='Income mean', mode = 'lines',
+                                 hoveron = 'fills', line={'shape':'linear', 'dash':'dot', 'color':'green'}))
+        fig.add_trace(go.Scatter(x=mean_gast['Mes'], y=mean_gast['Import'],
+                                 name='Despeses mean', mode = 'lines',
+                                 hoveron = 'fills', line={'shape':'linear', 'dash':'dot', 'color':'red'}))
         fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
         fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,')
         st.plotly_chart(fig, use_container_width=True)
@@ -158,7 +211,7 @@ with col21:
                 zf = bf.query('Any == @year').copy()
                 zf_oci = zf[zf.Tipus == 'Oci']
                 zf_fixe = zf[zf.Tipus == 'Fixe']
-                zf = zf_oci.append(zf_fixe).groupby(by=['Any', 'Mes', 'Tipus'], as_index=False, observed=True).sum()
+                zf = zf_oci.append(zf_fixe).groupby(by=['Any', 'Mes', 'Tipus'], as_index=False).sum()
                 fig = px.bar(zf, x='Mes', y='Import', color = 'Tipus',hover_data='Tipus')
                 fig.update_traces(hovertemplate='%{customdata} <br>%{value:,.0f} €')
                 fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
