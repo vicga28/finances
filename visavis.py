@@ -122,15 +122,18 @@ df = pd.DataFrame(data[1:], columns=data[0])
 
 #Generació id categories per a fer servir després pels inputs
 id_tipus = ['Despesa', 'Estalvi', 'Ingressos']
+id_tip = ['Estalvi', 'Oci', 'Fixe', 'Income']
 id_tipus_gast = ['Fixe', 'Oci']
 id_cat = ['Transport', 'Tabac', 'Restaurant', 'Beguda', 'Entrades', 'Transferencies', 'Subscripcions', 'Supermercat', 'Compres', 'Altres']
 id_fixe = ['Lloguer', 'Serveis']
+id_cat_total = id_cat + id_fixe
 id_years = np.sort(df['Any'].unique())[::-1]
 
 dict_month = {1:'Gener', 2:'Febrer', 3:'Març', 4:'Abril', 5:'Maig', 6:'Juny',
 7:'Juliol', 8:'Agost', 9:'Setembre', 10:'Octubre', 11:'Novembre', 12:'Desembre'}
 dict_gast = {'Oci':id_cat, 'Fixe':id_fixe}
 dict_tipus = {'Despesa':'Gast', 'Estalvi':'Estalvi', 'Ingressos':'Income'}
+dict_tip_cat = {'Estalvi':'', 'Oci':id_cat, 'Fixe':id_fixe, 'Income':''}
 
 id_months = dict_month.values()
 
