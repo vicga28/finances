@@ -7,29 +7,118 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objs as go
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-from st_files_connection import FilesConnection
+from oauth2client.service_account import ServiceAccountCredentials
+import gspread
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded', page_title='Finances', page_icon='📈',
                    menu_items={'About':'Primera versió'})
 
-# Create connection object and retrieve file contents.
-# Specify input format is a csv and to cache the result for 600 seconds.
-conn = st.connection('gcs', type=FilesConnection)
-df = conn.read("Llibreta_estalvis.xlsx", input_format="xlsx", ttl=600)
+def authenticate_gspread(credentials_path_or_dict):
+    """
+    Authenticate with Google Sheets using the provided service account credentials.
 
-# Print results.
-for row in df.itertuples():
-    st.write(f"{row.Owner} has a :{row.Pet}:")
+    This function uses OAuth2 to authenticate with Google Sheets and
+    provides access to spreadsheets, drive files, etc. depending on the scopes provided.
+
+    Parameters:
+    - credentials_path_or_dict (str/dict): The file path to the service account's JSON key
+                                          or the actual credentials as a dictionary.
+
+    Returns:
+    - gspread.Client: An authenticated gspread client that can be used to interact with Google Sheets.
+
+    Usage:
+    >>> client = authenticate_gspread('path_to_service_account.json')
+    or
+    >>> creds_dict = {
+    ...    'type': '...',
+    ...    'project_id': '...',
+    ...    # ... other credentials data
+    ... }
+    >>> client = authenticate_gspread(creds_dict)
+    >>> sheet = client.open('My Spreadsheet')
+    """
+    # Define the scopes necessary for accessing and manipulating Google Sheets and Drive
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive.file",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    # Check the type of the provided credentials_path_or_dict to decide the method to use
+    if isinstance(credentials_path_or_dict, str):
+        creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path_or_dict, scope)
+    elif isinstance(credentials_path_or_dict, dict):
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(credentials_path_or_dict, scope)
+    else:
+        raise ValueError("The provided credentials_path_or_dict should be either a string (file path) or a dictionary (actual credentials).")
+
+    # Authorize and return a gspread client
+    client = gspread.authorize(creds)
+    print("Successfully authenticated with Google Sheets.")
+    return client
+
+def fetch_data_from_sheet(client, spreadsheet_id, worksheet_name='DATA'):
+    """
+    Fetch data from a specific worksheet in a Google Sheet and return it as a list of lists.
+
+    This function connects to a Google Sheet using the provided client and fetches data from a specified worksheet. 
+    By default, it fetches data from the 'Revenue 2023' worksheet.
+
+    Parameters:
+    - client (gspread.Client): The client object that represents the Google Sheets API. Must be authenticated before calling this function.
+    - spreadsheet_id (str): The unique identifier for the target Google Sheet. It is usually found in the sheet's URL.
+    - worksheet_name (str, optional): The name of the worksheet to fetch data from. Defaults to 'Revenue 2023'.
+
+    Returns:
+    - list of lists: Rows of data fetched from the specified worksheet, where each row is represented as a list.
+
+    Example:
+    ```
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
+             "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+
+    creds = ServiceAccountCredentials.from_json_keyfile_name('your_credentials_file.json', scope)
+    client = gspread.authorize(creds)
+
+    spreadsheet_id = 'your_spreadsheet_id'
+    data = fetch_data_from_sheet(client, spreadsheet_id, 'Some Worksheet Name')
+    for row in data[:5]:  # print first five rows
+        print(row)
+    ```
+
+    Note:
+    Ensure the Google Sheet and the specified worksheet are accessible by the provided client credentials.
+    """
+    sheet = client.open_by_key(key=spreadsheet_id)
+    data = sheet.worksheet(worksheet_name).get_values(value_render_option = "UNFORMATTED_VALUE")
+    
+    return data
+
+# Now you can access the credentials as a dictionary
+credentials = {
+    "type": st.secrets['type'],
+    "project_id": st.secrets['project_id'],
+    "private_key_id": st.secrets['private_key_id'],
+    "private_key": st.secrets['private_key'].replace('\\\\n', '\\n'),
+    "client_email": st.secrets['client_email'],
+    "client_id": st.secrets['client_id'],
+    "auth_uri": st.secrets['auth_uri'],
+    "token_uri": st.secrets['token_uri'],
+    "auth_provider_x509_cert_url": st.secrets['auth_provider_x509_cert_url'],
+    "client_x509_cert_url": st.secrets['client_x509_cert_url']
+}
+
+client = authenticate_gspread(credentials)
+spreadsheet_id = "1--akOa5R5ghC35dztP78BvrdLZYFJT6LDwKSTR0mWSk"
+data = fetch_data_from_sheet(client, spreadsheet_id, worksheet_name='DATA')
 
 #Agafar el excel del Google Drive
-gauth = GoogleAuth()
-gauth.LocalWebserverAuth()
-drive = GoogleDrive(gauth)
-fileDownloaded = drive.CreateFile({'id':'1-KM3qtwtaNIjkozkcwQl0IpO2egAu3-W'})
-fileDownloaded.GetContentFile('Llibreta_estalvis.xlsx')
-df = pd.read_excel('Llibreta_estalvis.xlsx', sheet_name = 'DATA')
+df = pd.DataFrame(data[1:], columns=data[0])
 
 #Generació id categories per a fer servir després pels inputs
 id_tipus = ['Despesa', 'Estalvi', 'Ingressos']
