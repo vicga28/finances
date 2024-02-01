@@ -100,7 +100,6 @@ def fetch_data_from_sheet(client, spreadsheet_id, worksheet_name='DATA'):
     
     return data
 
-@st.cache_data
 def load_data(_client, spreadsheet_id):
     data = fetch_data_from_sheet(client, spreadsheet_id, worksheet_name='DATA')
     df = pd.DataFrame(data[1:], columns=data[0])
