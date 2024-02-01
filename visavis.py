@@ -146,9 +146,18 @@ year_actual = date.today().year
 day_actual = date.today().day
 num_days = calendar.monthrange(year_actual, month_actual)[-1]
 
+#Triant els colors de les gràfiques
+palette = px.colors.qualitative.T10
+dict_color = {'Income':palette[4], 'Oci':palette[2], 'Fixe':palette[1], 'Estalvi':palette[9]}
+bold = px.colors.qualitative.Bold
+vivid = px.colors.qualitative.Vivid
+col_cat = {'Transport':vivid[10], 'Tabac':vivid[0], 'Beguda':vivid[7], 'Restaurant':vivid[9], 'Entrades':vivid[2],
+           'Subscripcions':vivid[3], 'Supermercat':vivid[5], 'Compres':vivid[6], 'Altres':vivid[1]}
+dict_order = {'Tipus':['Income', 'Oci', 'Fixe', 'Estalvi'], 'Categoria':id_cat}
+
 #Funcions
 @st.cache_data
-def generate_monthly_dataframe(df):
+def generate_dataframe(df):
     #Generació d'un primer DataFrame amb una nova columna que és la data en format datetime i eliminar categories de Income i Estalvi que no és fan servir
     df_date = df.copy()
     id_cat_df = set(df.Categoria.unique())
@@ -186,14 +195,8 @@ def generate_monthly_dataframe(df):
     bf['Mes'] = bf.index.month
     #Sumar imports de cada categoria mensualment
     bf = bf.groupby(by=['Any', 'Mes', 'Tipus', 'Categoria'], as_index=False, observed=True).sum()
-    return bf
-
-@st.cache_data
-def generate_yearly_dataframe(df):
-    #Dataframe amb despeses per categoria anuals 
-    af = df.copy()
-    af = af.filter(['Any', 'Tipus', 'Categoria', 'Import']).groupby(by=['Any', 'Tipus', 'Categoria'], as_index=False, observed=True).sum()
-    return af
+    af = bf.filter(['Any', 'Tipus', 'Categoria', 'Import']).groupby(by=['Any', 'Tipus', 'Categoria'], as_index=False, observed=True).sum()
+    return bf, af
 
 @st.cache_data
 def gast_any(data, any, tipus):
@@ -223,12 +226,9 @@ def get_last_month(mes, any):
     return last_month
 
 #Generar DatafFrame
-bf = generate_monthly_dataframe(df)
-af = generate_yearly_dataframe(df)
+bf, af = generate_dataframe(df)
 
 #Pàgina web
-st.title('Dashboad finances')
-
 #Sidebar
 st.sidebar.markdown('### Selecció paràmetres')
 st.sidebar.markdown('## Mes a visualitzar')
@@ -243,9 +243,18 @@ if sel_month is None:
 else:
     month = get_month_number(sel_month)
 last_month, last_year = get_last_month(month, year)
-
+st.sidebar.markdown('## Categoria a visualitzar')
+sel_tipus = st.sidebar.selectbox('Tipus:', id_tip, index=None)
+if sel_tipus is None:
+    sel_tipus = 'Oci'
+    sel_cat = st.sidebar.selectbox('Categoria:', dict_gast[sel_tipus], index=None)
+else:
+    sel_cat = None
+    if sel_tipus in id_tipus_gast:    
+        sel_cat = st.sidebar.selectbox('Categoria:', dict_gast[sel_tipus], index=None)
 
 #Pàgina principal
+st.title('Dashboad finances')
 st.markdown("### **%s %s**" % (dict_month[month], year))
 
 #Metrics amb diferents medidors a triar
@@ -270,23 +279,18 @@ with col12:
             delta='{:,.2f}€'.format(gast_mes(bf, month, year, 'Oci')+gast_mes(bf, month, year, 'Fixe')-gast_mes(bf, last_month, last_year, 'Oci')-gast_mes(bf, last_month, last_year, 'Fixe')),
             delta_color='inverse')
 with col13:
-    #Previsió de gast del mes present
-    prev = gast_mes(bf, month, year, 'Oci')*num_days/day_actual+gast_mes(bf, month, year, 'Fixe')
-    st.metric(label='Previsió gast mensual',
-            value='{:,.2f}€'.format(prev),
-            delta='{:,.2f}€'.format(gast_mes(bf, last_month, last_year, 'Income')-prev),
-            delta_color='normal')
+    if month == month_actual:
+        #Previsió de gast del mes present
+        prev = gast_mes(bf, month, year, 'Oci')*num_days/day_actual+gast_mes(bf, month, year, 'Fixe')
+        st.metric(label='Previsió gast mensual',
+                value='{:,.2f}€'.format(prev),
+                delta='{:,.2f}€'.format(gast_mes(bf, last_month, last_year, 'Income')-prev),
+                delta_color='normal')
+    else:
+        #Balanç del mes
+        bal = gast_mes(bf,month,year,'Income')-(gast_mes(bf, month, year, 'Oci')+gast_mes(bf, month, year, 'Fixe'))
+        st.metric(label='Balanç mensual', value='{:,.2f}€'.format(bal), delta='')
     
-
-st.sidebar.markdown('## Categoria a visualitzar')
-sel_tipus = st.sidebar.selectbox('Tipus:', id_tip, index=None)
-if sel_tipus is None:
-    sel_tipus = 'Oci'
-    sel_cat = st.sidebar.selectbox('Categoria:', dict_gast[sel_tipus], index=None)
-else:
-    sel_cat = None
-    if sel_tipus in id_tipus_gast:    
-        sel_cat = st.sidebar.selectbox('Categoria:', dict_gast[sel_tipus], index=None)
 
 #Gràfiques
 col21, col22 = st.columns([6,4])
@@ -304,7 +308,8 @@ with col21:
         yf['Cost'] = 1
         yf['Cost'] = yf['Cost'].where(yf['Tipus'] == 'Income', -1)
         st.markdown('### Balanç anual %s' % (year))
-        fig = px.bar(yf, x='Mes', y='Import', color = 'Tipus', hover_data='Tipus', barmode='group')
+        fig = px.bar(yf, x='Mes', y='Import', color = 'Tipus', hover_data='Tipus', barmode='group', color_discrete_map=dict_color,
+                     category_orders = dict_order)
         fig.update_traces(hovertemplate='%{customdata} <br>%{value:,.0f} €')
         fig.add_trace(go.Scatter(x=yf.query('Tipus == "Income"')['Mes'], y=yf.query('Tipus == "Income"')['Import'],
                                  name='Income mean', mode = 'lines',
@@ -316,29 +321,27 @@ with col21:
         fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,')
         st.plotly_chart(fig, use_container_width=True)
         if sel_cat is None:
-            if sel_tipus == 'Gast':
-                st.markdown('### Despeses %s' % ( year))
-                zf = bf.query('Any == @year').copy()
-                zf_oci = zf[zf.Tipus == 'Oci']
-                zf_fixe = zf[zf.Tipus == 'Fixe']
-                zf = zf_oci.append(zf_fixe).groupby(by=['Any', 'Mes', 'Tipus'], as_index=False).sum()
-                fig = px.bar(zf, x='Mes', y='Import', color = 'Tipus',hover_data='Tipus')
-                fig.update_traces(hovertemplate='%{customdata} <br>%{value:,.0f} €')
+            if sel_tipus in id_tipus_gast:
+                st.markdown('### %s %s' % (sel_tipus, year))
+                fig = px.bar(bf.query('Any == @year and Tipus == @sel_tipus'), x='Mes', y='Import', color = 'Categoria',
+                            color_discrete_map=col_cat)
+                fig.update_traces(hovertemplate='%{value:,.0f} €')
                 fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
                 fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,', showlegend=True)
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.markdown('### %s %s' % (sel_tipus, year))
-                fig = px.bar(bf.query('Any == @year and Tipus == @sel_tipus'), x='Mes', y='Import', color = 'Categoria',hover_data='Categoria')
-                fig.update_traces(hovertemplate='%{customdata} <br>%{value:,.0f} €')
+                fig = px.bar(bf.query('Any == @year and Tipus == @sel_tipus'), x='Mes', y='Import', color = 'Tipus',
+                            color_discrete_map=dict_color)
+                fig.update_traces(hovertemplate='%{value:,.0f} €')
                 fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
                 fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,', showlegend=True)
                 st.plotly_chart(fig, use_container_width=True)
         else:
             st.markdown('### %s %s' % (sel_cat, year))
-            fig = px.bar(bf.query('Any == @year and Tipus == @sel_tipus and Categoria == @sel_cat'), x='Mes', y='Import',
-                         color = sns.color_palette('hls',bf.query('Any == @year and Tipus == @sel_tipus and Categoria == @sel_cat').count()['Mes']),
-                         hover_data='Categoria')
+            df_cat = bf.query('Any == @year and Tipus == @sel_tipus and Categoria == @sel_cat')
+            fig = px.bar(df_cat, x='Mes', y='Import',
+                         color = df_cat['Categoria'], color_discrete_map =  col_cat, hover_data='Categoria')
             fig.update_traces(hovertemplate='%{value:,.0f} €', hoverinfo='none')
             fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
             fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,', showlegend=False)
@@ -346,18 +349,45 @@ with col21:
     with tab2:
         xf = af.groupby(by=['Any', 'Tipus'], as_index=False, observed=True).sum()
         st.markdown('### Balanç anual')
-        fig = px.bar(xf, x='Any', y='Import', color = 'Tipus', hover_data='Tipus', barmode='group')
+        fig = px.bar(xf, x='Any', y='Import', color = 'Tipus', hover_data='Tipus', barmode='group', color_discrete_map=dict_color,
+                     category_orders = dict_order)
         fig.update_traces(hovertemplate='%{customdata} <br>%{value:,.0f} €')
         fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
         fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,')
         st.plotly_chart(fig, use_container_width=True)
+        if sel_cat is None:
+            if sel_tipus in id_tipus_gast:
+                st.markdown('### %s %s' % (sel_tipus, year))
+                df_cat = af.query('Tipus == @sel_tipus')
+                fig = px.bar(df_cat, x='Any', y='Import', color = 'Categoria', color_discrete_map=col_cat)
+                fig.update_traces(hovertemplate='%{value:,.0f} €')
+                fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
+                fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,', showlegend=True)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.markdown('### %s %s' % (sel_tipus, year))
+                df_cat = af.query('Tipus == @sel_tipus')
+                fig = px.bar(df_cat, x='Any', y='Import', color = 'Tipus', color_discrete_map=dict_color)
+                fig.update_traces(hovertemplate='%{value:,.0f} €')
+                fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
+                fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,', showlegend=True)
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.markdown('### %s %s' % (sel_cat, year))
+            df_cat = af.query('Tipus == @sel_tipus and Categoria == @sel_cat')
+            fig = px.bar(df_cat, x='Any', y='Import',
+                         color = df_cat['Categoria'], color_discrete_map =  col_cat, hover_data='Categoria')
+            fig.update_traces(hovertemplate='%{value:,.0f} €', hoverinfo='none')
+            fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
+            fig.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.,', showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
 
 with col22:
     tab10, tab11 = st.tabs(['Bar chart', 'Pie chart'])
     with tab10:
         st.markdown('### Distribució mensual')
         fig = px.bar(bf.query('Any == @year and Mes == @month and Tipus == "Oci"').sort_values(['Import'], ascending=False),
-                    y='Categoria', x='Import', orientation ='h', color='Categoria')
+                    y='Categoria', x='Import', orientation ='h', color='Categoria', color_discrete_map=col_cat)
         fig.update_traces(hovertemplate='%{value:,.02f} €')
         fig.update_xaxes(title='')
         fig.update_layout(showlegend=False, xaxis_ticksuffix = '€', xaxis_tickformat= ',', separators='.,')
@@ -365,6 +395,6 @@ with col22:
     with tab11:
         st.markdown('### Distribució mensual')
         fig = px.pie(bf.query('Any == @year and Mes == @month and Tipus == "Oci"'),
-                        values='Import', names='Categoria', hole=.3)
+                        values='Import', names='Categoria', hole=.3, color_discrete_map=col_cat)
         fig.update_traces(hovertemplate='%{label} <br>%{value} €')
         st.plotly_chart(fig, use_container_width=True)
