@@ -8,6 +8,5 @@ plotly
 openpyxl
 gspread
 oauth2client
-sklearn.metrics
-sklearn.model_selection
+scikit-learn
 xgboost
