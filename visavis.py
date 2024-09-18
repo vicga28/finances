@@ -764,7 +764,7 @@ with tab10:
                             "Data",
                             format="DD/MM/YYYY"
                         )},
-                        hide_index=False,
+                        hide_index=True,
                         use_container_width = True)
             else:
                 df_dis = add_date(df)
