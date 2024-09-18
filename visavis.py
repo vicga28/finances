@@ -752,7 +752,7 @@ with tab10:
                 df_dis = add_date(df)
                 sel_df = df_dis.query('Any == @year and Mes == @month and Tipus == @sel_tipus')
                 sel_df = sel_df.drop(columns=['Any', 'Mes', 'Dia'])
-                st.dataframe(sel_df,
+                st.dataframe(sel_df, column_order=['Date', 'Import', 'Tipus', 'Categoria', 'Concepte', 'Obs'],
                         column_config={"Import": st.column_config.NumberColumn(
                         "Import",
                         help="Import en euros",
