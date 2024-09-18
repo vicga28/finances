@@ -751,7 +751,7 @@ with tab10:
             if sel_cat == None:
                 df_dis = add_date(df)
                 sel_df = df_dis.query('Any == @year and Mes == @month and Tipus == @sel_tipus')
-                sel_df = sel_df.set_index('Date').drop(columns=['Any', 'Mes', 'Dia'])
+                sel_df = sel_df.drop(columns=['Any', 'Mes', 'Dia'])
                 st.dataframe(sel_df,
                         column_config={"Import": st.column_config.NumberColumn(
                         "Import",
