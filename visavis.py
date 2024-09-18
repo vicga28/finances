@@ -711,42 +711,78 @@ with tab10:
                 sel_cat = st.selectbox(label='Categoria', options=id_cat, index=None, key='main_cat', placeholder='Filtrar per categoria')
             else:
                 sel_cat = st.selectbox(label='Categoria', options=dict_cat[sel_tipus], index=None, key='main_cat', placeholder='Filtrar per categoria')
-        if sel_cat == None:
-            df_dis = add_date(df)
-            sel_df = df_dis.query('Any == @year and Mes == @month')
-            sel_df = sel_df.set_index('Date').drop(columns=['Any', 'Mes', 'Dia'])
-            st.dataframe(sel_df,
-                    column_config={"Import": st.column_config.NumberColumn(
-                    "Import",
-                    help="Import en euros",
-                    min_value=0,
-                    max_value=1000,
-                    step=0.01,
-                    format="%f €",),
-                    "Date":st.column_config.DateColumn(
-                        "Data",
-                        format="DD/MM/YYYY"
-                    )},
-                    hide_index=False,
-                    use_container_width = True)
+        if sel_tipus == None:
+            if sel_cat == None:
+                df_dis = add_date(df)
+                sel_df = df_dis.query('Any == @year and Mes == @month')
+                sel_df = sel_df.set_index('Date').drop(columns=['Any', 'Mes', 'Dia'])
+                st.dataframe(sel_df,
+                        column_config={"Import": st.column_config.NumberColumn(
+                        "Import",
+                        help="Import en euros",
+                        min_value=0,
+                        max_value=1000,
+                        step=0.01,
+                        format="%f €",),
+                        "Date":st.column_config.DateColumn(
+                            "Data",
+                            format="DD/MM/YYYY"
+                        )},
+                        hide_index=False,
+                        use_container_width = True)
+            else:
+                df_dis = add_date(df)
+                sel_df = df_dis.query('Any == @year and Mes == @month and Categoria == @sel_cat')
+                sel_df = sel_df.drop(columns=['Any', 'Mes', 'Dia', 'Tipus', 'Categoria'])
+                st.dataframe(sel_df, column_order=['Date', 'Import', 'Concepte', 'Obs'],
+                        column_config={"Import": st.column_config.NumberColumn(
+                        "Import",
+                        help="Import en euros",
+                        min_value=0,
+                        max_value=1000,
+                        step=0.01,
+                        format="%f €",),
+                        "Date":st.column_config.DateColumn(
+                            "Data",
+                            format="DD/MM/YYYY")},
+                        hide_index=True,
+                        use_container_width = True)
         else:
-            df_dis = add_date(df)
-            sel_df = df_dis.query('Any == @year and Mes == @month and Categoria == @sel_cat')
-            sel_df = sel_df.drop(columns=['Any', 'Mes', 'Dia', 'Tipus', 'Categoria'])
-            st.dataframe(sel_df, column_order=['Date', 'Import', 'Concepte', 'Obs'],
-                    column_config={"Import": st.column_config.NumberColumn(
-                    "Import",
-                    help="Import en euros",
-                    min_value=0,
-                    max_value=1000,
-                    step=0.01,
-                    format="%f €",),
-                    "Date":st.column_config.DateColumn(
-                        "Data",
-                        format="DD/MM/YYYY")},
-                    hide_index=True,
-                    use_container_width = True)
-
+            if sel_cat == None:
+                df_dis = add_date(df)
+                sel_df = df_dis.query('Any == @year and Mes == @month and Tipus == @sel_tipus')
+                sel_df = sel_df.set_index('Date').drop(columns=['Any', 'Mes', 'Dia'])
+                st.dataframe(sel_df,
+                        column_config={"Import": st.column_config.NumberColumn(
+                        "Import",
+                        help="Import en euros",
+                        min_value=0,
+                        max_value=1000,
+                        step=0.01,
+                        format="%f €",),
+                        "Date":st.column_config.DateColumn(
+                            "Data",
+                            format="DD/MM/YYYY"
+                        )},
+                        hide_index=False,
+                        use_container_width = True)
+            else:
+                df_dis = add_date(df)
+                sel_df = df_dis.query('Any == @year and Mes == @month and Categoria == @sel_cat')
+                sel_df = sel_df.drop(columns=['Any', 'Mes', 'Dia', 'Tipus', 'Categoria'])
+                st.dataframe(sel_df, column_order=['Date', 'Import', 'Concepte', 'Obs'],
+                        column_config={"Import": st.column_config.NumberColumn(
+                        "Import",
+                        help="Import en euros",
+                        min_value=0,
+                        max_value=1000,
+                        step=0.01,
+                        format="%f €",),
+                        "Date":st.column_config.DateColumn(
+                            "Data",
+                            format="DD/MM/YYYY")},
+                        hide_index=True,
+                        use_container_width = True)
 # Vista anual
 
 with tab20:
