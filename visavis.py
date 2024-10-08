@@ -557,7 +557,8 @@ lim_cat = {
     'Transferencies' : 50,
     'Supermercat' : 300,
     'Compres' : 100,
-    'Altres' : 50
+    'Altres' : 50,
+    'Viatges' : 50
 }
 
 #Generar DatafFrame
