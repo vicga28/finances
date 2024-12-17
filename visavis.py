@@ -1027,9 +1027,9 @@ with tab20:
     st.header('Ingressos', divider='gray')
 
     fig_income_year = px.bar(nomina_year, x=nomina_year.index, y='Import', color='Concepte')
-    fig_serveis_year.update_traces(hovertemplate='%{value:,.0f} €')
-    fig_serveis_year.update_xaxes(tickangle=-30, showticklabels=True, title='')
-    fig_serveis_year.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.', showlegend=True,
+    fig_income_year.update_traces(hovertemplate='%{value:,.0f} €')
+    fig_income_year.update_xaxes(tickangle=-30, showticklabels=True, title='')
+    fig_income_year.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.', showlegend=True,
                                     legend = dict(title=None, orientation='h', yanchor='top', xanchor='left', y=1.15, x=0))
     st.plotly_chart(fig_income_year, use_container_width=True)
     cap1, cap2, cap3 = st.columns(3)
