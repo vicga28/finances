@@ -869,9 +869,9 @@ def create_income(df = df, year_actual = year_actual, plot = False):
 
 
 # Generacio DataFrames pels gràfics i mitges de les despeses fixes i nomina
-nomina, nomina_year, mean_year_nomina, mean_last_nomina = create_income()
-lloguer, lloguer_year, mean_last_lloguer, mean_year_lloguer = create_lloguer(plot=False)
-dict_serveis, df_year_serveis, serveis_hist, serveis_year, dict_mean_serveis, mean_last_serveis = create_serveis()
+nomina, nomina_year, mean_year_nomina, mean_last_nomina = create_income(year_actual=year)
+lloguer, lloguer_year, mean_last_lloguer, mean_year_lloguer = create_lloguer(year_actual=year, plot=False)
+dict_serveis, df_year_serveis, serveis_hist, serveis_year, dict_mean_serveis, mean_last_serveis = create_serveis(year_actual=year)
 
 
 
