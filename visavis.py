@@ -693,11 +693,10 @@ with tab10:
         st.plotly_chart(fig, use_container_width=True)
     with col200:
         # Taula amb despesa per categories
-        table_cat = table_cat.style.applymap(color_dif, subset=['Diff'])\
+        table_cat = table_cat.sort_values(by=['Import']).style.applymap(color_dif, subset=['Diff'])\
             .format('{:,.2f} €', subset=(['Import', 'Limit', 'Diff']))\
             .format('{:,.2f} %', subset=('Percentatge'))\
-            .background_gradient(cmap='RdYlGn_r', subset=['Percentatge'], vmax=100, vmin=0)\
-            .sort_values(by=['Import'])
+            .background_gradient(cmap='RdYlGn_r', subset=['Percentatge'], vmax=100, vmin=0)
         st.dataframe(table_cat, column_order=['Import', 'Percentatge', 'Limit', 'Diff', 'Trend'],
                      column_config={'Trend':st.column_config.LineChartColumn('Últims 6 mesos', y_min = 0)},
                      use_container_width = True)
