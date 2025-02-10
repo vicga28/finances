@@ -991,7 +991,7 @@ with tab20:
         st.markdown('### Lloguer')
         fig_lloguer_year = px.bar(lloguer_year, x=lloguer_year.index, y='Import', color='Concepte')
         fig_lloguer_year.update_traces(hovertemplate='%{value:,.0f} €')
-        fig_lloguer_year.update_xaxes(tickangle=-30, showticklabels=True, title='')
+        fig_lloguer_year.update_xaxes(tickangle=-30, showticklabels=True, title='', labelalias=dict_month)
         fig_lloguer_year.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.', showlegend=True,
                                         legend = dict(title=None, orientation='h', yanchor='top', xanchor='left', y=1.15, x=0))
         st.plotly_chart(fig_lloguer_year)
