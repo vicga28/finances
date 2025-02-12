@@ -209,6 +209,33 @@ def generate_dataframe(df):
     return bf, af
 
 @st.cache_data
+def fill_dataframe(df):
+    bf = df.copy()
+    bf['Data'] = pd.to_datetime(bf.index)
+    #Generació d'un segon DataFrame (dummy) on es generen entrades per a cada dia i categoria amb import 0
+    first_day = date(year_actual, 1, 1)
+    last_day = date(year_actual, 12, 31)
+    time_series = pd.date_range(start=first_day, end=last_day)
+    df_zero = pd.DataFrame([0], columns=['Import'])
+    i=0
+    options = df['Concepte'].unique()
+    for data in time_series:
+        for opt in options:
+            df_zero.loc[i, 'Data'] = data
+            df_zero.loc[i, 'Concepte'] = opt
+            df_zero.loc[i, 'Import'] = 0
+            i+=1 
+    #Unió dels dos DataFrames i retornar un únic per tenir valors de 0 per les categories on no hi ha despeses per un determinat mes
+    bf = df_zero.merge(bf, on=['Data', 'Concepte'], how='left')
+    bf = bf.fillna(0).drop(columns='Import_x').rename(columns={'Import_y':'Import'}).set_index('Data')
+    bf['Any'] = bf.index.year
+    bf['Mes'] = bf.index.month
+    #Sumar imports de cada categoria mensualment
+    bf = bf.groupby(by=['Any', 'Mes', 'Concepte'], as_index=False, observed=True).sum()
+    af = bf.filter(['Any', 'Concepte', 'Import']).groupby(by=['Any', 'Concepte'], as_index=False, observed=True).sum()
+    return bf
+
+@st.cache_data
 def gast_any(data, any, tipus):
     output = data.query('Any == @any and Tipus == @tipus').agg('sum').get('Import')
     return output
@@ -679,6 +706,8 @@ with tab10:
             bal = gast_mes(bf,month,year,'Income')-(gast_mes(bf, month, year, 'Oci')+gast_mes(bf, month, year, 'Fixe'))
             st.metric(label='Balanç mensual', value='{:,.2f} €'.format(bal), delta='')
             change_color('{:,.2f} €'.format(bal), bal)
+        st.metric(label='Gast promig diari',
+                  value = '{:,.2f} €'.format((gast_mes(bf, month, year, 'Oci')/day_actual)))
 
     # Gràfiques i taules
     col100, col200 = st.columns([5,5])
@@ -693,7 +722,7 @@ with tab10:
         st.plotly_chart(fig, use_container_width=True)
     with col200:
         # Taula amb despesa per categories
-        table_cat = table_cat.sort_values(by=['Import'], ascending=False).style.applymap(color_dif, subset=['Diff'])\
+        table_cat = table_cat.sort_values(['Import'], ascending=False).style.applymap(color_dif, subset=['Diff'])\
             .format('{:,.2f} €', subset=(['Import', 'Limit', 'Diff']))\
             .format('{:,.2f} %', subset=('Percentatge'))\
             .background_gradient(cmap='RdYlGn_r', subset=['Percentatge'], vmax=100, vmin=0)
@@ -788,7 +817,7 @@ with tab10:
 serveis = ['Aigua', 'Gas', 'Electricitat', 'WiFi']
 
 
-def create_lloguer(df=df, year_actual = year_actual, plot=False):
+def create_lloguer(df = df, year_actual = year_actual, plot=False):
     fixe = df[df['Tipus'] ==  'Fixe']
     fixe_lloguer = fixe[fixe['Categoria'] == 'Lloguer']
     fixe_lloguer = fixe_lloguer.drop(columns=['Dia']).groupby(by=['Any', 'Mes', 'Concepte'], as_index=False, observed=True).sum()
@@ -917,6 +946,8 @@ with tab20:
         bal_year = gast_any(bf,year,'Income')-(gast_any(bf, year, 'Oci')+gast_any(bf, year, 'Fixe'))
         st.metric(label='Balanç anual', value='{:,.2f} €'.format(bal_year), delta='')
         change_color('{:,.2f} €'.format(bal_year), bal_year)
+        st.metric(label='Gast promig mensual',
+                  value = '{:,.2f} €'.format((gast_any(bf, year, 'Oci')+gast_any(bf, year, 'Fixe'))/month_actual))
 
 
     # Gràfiques distribució anual per mesos
@@ -985,13 +1016,21 @@ with tab20:
                             legend = dict(title=None, orientation='h',yanchor='bottom', y=1.15, xanchor='left', x=0))
     st.plotly_chart(fig_fixe, use_container_width=True)
 
+    mean_year_fixe = fixe_df.groupby(['Mes']).sum().query('Import != 0')['Import'].mean()
+
+    st.write("El gast promig fixe l'últim any ha estat de **%d €**." % (mean_year_fixe))
+
+    yearly_lloguer = fill_dataframe(lloguer_year)
+    yearly_serveis = fill_dataframe(serveis_year)
+
+
     year_col_3, year_col_4 = st.columns(2)
 
     with year_col_3:
         st.markdown('### Lloguer')
-        fig_lloguer_year = px.bar(lloguer_year, x=lloguer_year.index, y='Import', color='Concepte')
+        fig_lloguer_year = px.bar(yearly_lloguer, x='Mes', y='Import', color='Concepte')
         fig_lloguer_year.update_traces(hovertemplate='%{value:,.0f} €')
-        fig_lloguer_year.update_xaxes(tickangle=-30, showticklabels=True, title='', labelalias=dict_month)
+        fig_lloguer_year.update_xaxes(tickangle=-30, showticklabels=True, title='', labelalias=dict_month, type='category')
         fig_lloguer_year.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.', showlegend=True,
                                         legend = dict(title=None, orientation='h', yanchor='top', xanchor='left', y=1.15, x=0))
         st.plotly_chart(fig_lloguer_year)
@@ -999,9 +1038,9 @@ with tab20:
    
     with year_col_4:
         st.markdown('### Serveis')
-        fig_serveis_year = px.bar(serveis_year, x=serveis_year.index, y='Import', color='Concepte', category_orders={'Concepte':['WiFi', 'Electricitat', 'Aigua', 'Gas']})
+        fig_serveis_year = px.bar(yearly_serveis, x='Mes', y='Import', color='Concepte', category_orders={'Concepte':['WiFi', 'Electricitat', 'Aigua', 'Gas']})
         fig_serveis_year.update_traces(hovertemplate='%{value:,.0f} €')
-        fig_serveis_year.update_xaxes(tickangle=-30, showticklabels=True, title='')
+        fig_serveis_year.update_xaxes(tickangle=-30, showticklabels=True, title='', labelalias=dict_month, type='category')
         fig_serveis_year.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.', showlegend=True,
                                         legend = dict(title=None, orientation='h', yanchor='top', xanchor='left', y=1.15, x=0))
         st.plotly_chart(fig_serveis_year, use_container_width=True)
@@ -1021,14 +1060,20 @@ with tab20:
                             legend = dict(title=None, orientation='h',yanchor='bottom', y=1.15, xanchor='left', x=0))
     st.plotly_chart(fig_oci, use_container_width=True)
 
-    st.dataframe(expenses_yearly[year].style.format('{:,.2f} €').background_gradient(cmap='RdYlGn_r', axis=0),
-                     use_container_width=True)
+    mean_year_oci = oci_df.groupby(['Mes']).sum().query('Import != 0')['Import'].mean()
+
+    st.write("El gast promig en oci l'últim any ha estat de **%d €**." % (mean_year_oci))
+
+    st.dataframe(expenses_yearly[year].sort_values(['Total'], ascending=False).style.format('{:,.2f} €').background_gradient(cmap='RdYlGn_r', axis=0),
+                  use_container_width=True)
 
     st.header('Ingressos', divider='gray')
 
-    fig_income_year = px.bar(nomina_year, x=nomina_year.index, y='Import', color='Concepte')
+    yearly_income = fill_dataframe(nomina_year)
+
+    fig_income_year = px.bar(yearly_income, x='Mes', y='Import', color='Concepte')
     fig_income_year.update_traces(hovertemplate='%{value:,.0f} €')
-    fig_income_year.update_xaxes(tickangle=-30, showticklabels=True, title='')
+    fig_income_year.update_xaxes(tickangle=-30, showticklabels=True, title='', labelalias=dict_month, type='category')
     fig_income_year.update_layout(yaxis_ticksuffix='€', yaxis_tickformat=',', separators='.', showlegend=True,
                                     legend = dict(title=None, orientation='h', yanchor='top', xanchor='left', y=1.15, x=0))
     st.plotly_chart(fig_income_year, use_container_width=True)
