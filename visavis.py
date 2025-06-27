@@ -817,7 +817,7 @@ with tab10:
 serveis = ['Aigua', 'Gas', 'Electricitat', 'WiFi']
 
 
-def create_lloguer(df = df, year_actual = year_actual, plot=False):
+def create_lloguer(df = df, year_actual = year, plot=False):
     fixe = df[df['Tipus'] ==  'Fixe']
     fixe_lloguer = fixe[fixe['Categoria'] == 'Lloguer']
     fixe_lloguer = fixe_lloguer.drop(columns=['Dia']).groupby(by=['Any', 'Mes', 'Concepte'], as_index=False, observed=True).sum()
@@ -843,7 +843,7 @@ def create_lloguer(df = df, year_actual = year_actual, plot=False):
     mean_year_lloguer = df_year_lloguer['Import'].mean()
     return fixe_lloguer, lloguer_year, mean_last_lloguer, mean_year_lloguer
 
-def create_serveis(df = df, serveis = serveis, year_actual = year_actual, plot = False):
+def create_serveis(df = df, serveis = serveis, year_actual = year, plot = False):
     fixe = df[df['Tipus'] ==  'Fixe']
     fixe_serveis = fixe[fixe['Categoria'] == 'Serveis']
     dict_serveis = {}
@@ -881,7 +881,7 @@ def create_serveis(df = df, serveis = serveis, year_actual = year_actual, plot =
 
     return dict_serveis, df_year_serveis, fixe_serveis_global, fixe_serveis_year, dict_mean_serveis, mean_last_serveis
 
-def create_income(df = df, year_actual = year_actual, plot = False):
+def create_income(df = df, year_actual = year, plot = False):
     nomina = df[df['Tipus'] ==  'Income']
     nomina = nomina[nomina['Categoria'] == 'Nomina']
     nomina = nomina.drop(columns=['Dia']).groupby(by=['Any', 'Mes'], as_index=False, observed=True).sum()
