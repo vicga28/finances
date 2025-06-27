@@ -852,11 +852,13 @@ def create_serveis(df = df, serveis = serveis, year_actual = year, plot = False)
     dict_serveis = {}
     fig_serveis = {}
     dict_mean_serveis = {} # Mitja últim any de cada servei
+    dict_year_serveis = {}
     for servei in serveis:
         dict_serveis[servei] = fixe_serveis [fixe_serveis['Concepte'] == servei].drop(columns=['Dia']).groupby(by=['Any', 'Mes'], as_index=False, observed=True).sum()
         dict_serveis[servei]['Dia'] = 1
         dict_serveis[servei] = add_date(dict_serveis[servei])
         dict_serveis[servei] = dict_serveis[servei].drop(columns=['Tipus', 'Dia', 'Categoria', 'Obs', 'Concepte']).set_index(['Date'])
+        dict_year_serveis[servei] = dict_serveis[servei][dict_serveis[servei]['Any'] == year_actual]['Import'].mean()
         if plot:
             st.write(servei)
             fig_serveis[servei] = px.bar(dict_serveis[servei], x=dict_serveis[servei].index, y='Import')
@@ -882,7 +884,10 @@ def create_serveis(df = df, serveis = serveis, year_actual = year, plot = False)
 
     mean_last_serveis = df_year_serveis['Import'][-12:].mean()
 
-    return dict_serveis, df_year_serveis, fixe_serveis_global, fixe_serveis_year, dict_mean_serveis, mean_last_serveis
+    df_year_serveis = df_year_serveis[df_year_serveis['Any'] == year_actual]
+    mean_year_serveis = df_year_serveis['Import'].mean()
+
+    return dict_serveis, df_year_serveis, fixe_serveis_global, fixe_serveis_year, dict_mean_serveis, mean_last_serveis, mean_year_serveis, dict_year_serveis
 
 def create_income(df = df, year_actual = year, plot = False):
     nomina = df[df['Tipus'] ==  'Income']
@@ -903,10 +908,7 @@ def create_income(df = df, year_actual = year, plot = False):
 # Generacio DataFrames pels gràfics i mitges de les despeses fixes i nomina
 nomina, nomina_year, mean_year_nomina, mean_last_nomina = create_income(year_actual=year)
 lloguer, lloguer_year, mean_last_lloguer, mean_year_lloguer = create_lloguer(year_actual=year, plot=False)
-dict_serveis, df_year_serveis, serveis_hist, serveis_year, dict_mean_serveis, mean_last_serveis = create_serveis(year_actual=year)
-
-
-
+dict_serveis, df_year_serveis, serveis_hist, serveis_year, dict_mean_serveis, mean_last_serveis, mean_year_serveis, dict_year_serveis = create_serveis(year_actual=year)
 
 
 # Vista anual
@@ -1051,7 +1053,7 @@ with tab20:
         st.write("""El gast promig durant l'últim any en serveis ha estat de **%d €**;
                  dels quals **%d €** han estat de l'*electricitat*,
                  **%d €** de l'*aigua*, **%d €** del *gas* i **%d €** del WiFi.
-                 """ % (mean_last_serveis, dict_mean_serveis['Electricitat'], dict_mean_serveis['Aigua'], dict_mean_serveis['Gas'], dict_mean_serveis['WiFi'] ))
+                 """ % (mean_year_serveis, dict_year_serveis['Electricitat'], dict_year_serveis['Aigua'], dict_year_serveis['Gas'], dict_year_serveis['WiFi'] ))
 
     st.header('Oci', divider='gray')
 
