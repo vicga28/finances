@@ -134,7 +134,7 @@ output_spreadsheet_id = st.secrets['OUTPUT_SPREADSHEET_ID']
 
 # Carrega l'autenticació de Google
 # credentials = json.loads(st.secrets["GSPREAD_CREDENTIALS"]) # Versió per Streamlit
-gspread_auth = get_gspread_auth("credencials.json")
+gspread_auth = get_gspread_auth(credentials)
 
 print('Script running...')
 
