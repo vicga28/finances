@@ -11,4 +11,4 @@ oauth2client
 scikit-learn
 xgboost
 itertools
-gspread_dataframe
+gspread-dataframe
