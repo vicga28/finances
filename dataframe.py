@@ -1,12 +1,14 @@
 import pandas as pd
+import streamlit as st
 from gspread_dataframe import set_with_dataframe, get_as_dataframe
 from datetime import date
 from itertools import product
 
 from auth import get_gspread_auth, load_data
 
-id_tipus = ['Despesa', 'Estalvi', 'Ingressos']
+id_tipus_nom = ['Despesa', 'Estalvi', 'Ingressos']
 id_tipus_gast = ['Fixe', 'Oci']
+id_tipus = ['Fixe', 'Oci', 'Income']
 
 def write_to_sheet(sheet_name, df, spreadsheet_id, credentials):
         gc = get_gspread_auth(credentials)
@@ -24,7 +26,8 @@ def process_dataframe(df):
     id_tip = df['Tipus'].unique()
     id_cat = df.query('Tipus == "Oci"')['Categoria'].unique()
     id_fixe = df.query('Tipus == "Fixe"')['Categoria'].unique()
-    dict_gast = {'Oci':id_cat, 'Fixe':id_fixe}
+    id_income = df.query('Tipus == "Income"')['Categoria'].unique()
+    dict_gast = {'Oci':id_cat, 'Fixe':id_fixe, 'Income':id_income}
     year_actual = date.today().year
     df_date['Data'] = df['Any'].astype('string') + '-' + df['Mes'].astype('string') + '-' + df['Dia'].astype('string')
     df_date = df_date.filter(['Data', 'Tipus', 'Categoria', 'Import']).groupby(['Data', 'Tipus', 'Categoria'], as_index=False).sum()
@@ -39,7 +42,7 @@ def process_dataframe(df):
 
     records = []
     for data, tipus in product(time_series, id_tip):
-        if tipus in id_tipus_gast:
+        if tipus in id_tipus:
             for cat in dict_gast[tipus]:
                 records.append((data, tipus, cat, 0))
         else:
@@ -50,7 +53,6 @@ def process_dataframe(df):
     bf = bf.fillna(0).drop(columns='Import_x').rename(columns={'Import_y':'Import'})
     bf['Any'] = bf['Data'].dt.year
     bf['Mes'] = bf['Data'].dt.month
-
     bf = bf.groupby(['Any', 'Mes', 'Tipus', 'Categoria'], as_index=False, observed=True)['Import'].sum()
     af = bf.groupby(['Any', 'Tipus', 'Categoria'], as_index=False, observed=True)['Import'].sum()
     return bf, af
