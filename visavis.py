@@ -20,15 +20,15 @@ st.set_page_config(layout='wide', initial_sidebar_state='collapsed', page_title=
 
 # Now you can access the credentials as a dictionary
 credentials = {
-    "type": st.secrets['type'],
+    "type": "service_account",
     "project_id": st.secrets['project_id'],
     "private_key_id": st.secrets['private_key_id'],
     "private_key": st.secrets['private_key'].replace('\\\\n', '\\n'),
     "client_email": st.secrets['client_email'],
     "client_id": st.secrets['client_id'],
-    "auth_uri": st.secrets['auth_uri'],
-    "token_uri": st.secrets['token_uri'],
-    "auth_provider_x509_cert_url": st.secrets['auth_provider_x509_cert_url'],
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
     "client_x509_cert_url": st.secrets['client_x509_cert_url']
 }
 input_spreadsheet_id = st.secrets['INPUT_SPREADSHEET_ID']
