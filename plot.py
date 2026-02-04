@@ -104,9 +104,10 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             fig.update_xaxes(title='')
         else:
             fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
-        fig.update_layout(legend = dict(title=None, orientation='h',yanchor='bottom', y=1, xanchor='left', x=0))
+        fig.update_layout(legend = dict(title=None, orientation='h',yanchor='bottom', y=1, xanchor='left', x=0), barmode=barmode)
     else:
         print("Combinació de paràmetres no vàlida per a generar el gràfic.")
         return None
 
     return fig
+
