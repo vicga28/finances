@@ -108,4 +108,5 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
     else:
         print("Combinació de paràmetres no vàlida per a generar el gràfic.")
         return None
+
     return fig
