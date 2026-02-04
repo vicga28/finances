@@ -1,5 +1,6 @@
 import gspread
 import pandas as pd
+import streamlit as st
 from google.oauth2.service_account import Credentials
 
 @st.cache_resource
@@ -111,6 +112,7 @@ def load_data(credentials, spreadsheet_id, sheet_name):
     data = fetch_data_from_sheet(client, spreadsheet_id, worksheet_name=sheet_name)
     df = pd.DataFrame(data[1:], columns=data[0])
     return df
+
 
 
 
