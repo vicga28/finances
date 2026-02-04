@@ -51,9 +51,9 @@ def authenticate_gspread(credentials_path_or_dict):
 
     # Check the type of the provided credentials_path_or_dict to decide the method to use
     if isinstance(credentials_path_or_dict, str):
-        creds = Credentials.from_service_account_info(credentials_path_or_dict, scope)
+        creds = Credentials.from_service_account_info(credentials_path_or_dict, scopes=scope)
     elif isinstance(credentials_path_or_dict, dict):
-        creds = Credentials.from_service_account_info(credentials_path_or_dict, scope)
+        creds = Credentials.from_service_account_info(credentials_path_or_dict, scopes=scope)
     else:
         raise ValueError("The provided credentials_path_or_dict should be either a string (file path) or a dictionary (actual credentials).")
 
@@ -107,6 +107,7 @@ def load_data(credentials, spreadsheet_id, sheet_name):
     data = fetch_data_from_sheet(client, spreadsheet_id, worksheet_name=sheet_name)
     df = pd.DataFrame(data[1:], columns=data[0])
     return df
+
 
 
 
