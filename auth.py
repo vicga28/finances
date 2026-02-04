@@ -1,7 +1,6 @@
 import gspread
 import pandas as pd
 from google.oauth2.service_account import Credentials
-from oauth2client.service_account import ServiceAccountCredentials
 
 def get_gspread_auth(credentials_dict_or_path):
     scope = [
@@ -108,4 +107,5 @@ def load_data(credentials, spreadsheet_id, sheet_name):
     data = fetch_data_from_sheet(client, spreadsheet_id, worksheet_name=sheet_name)
     df = pd.DataFrame(data[1:], columns=data[0])
     return df
+
 
