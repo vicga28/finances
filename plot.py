@@ -86,7 +86,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             income = df.query('Tipus == "Income"')
             cost = df.query('Tipus != "Income"').groupby(by=[x]).sum().get('Import').reset_index()
             if x == 'Mes':
-                      df['Mes'] = df['Mes'].astype(str)
+                df['Mes'] = df['Mes'].astype(str)
                 if year == year_actual:
                     month_range = range(1,month_actual+1)
                 else:
@@ -111,6 +111,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         return None
 
     return fig
+
 
 
 
