@@ -101,13 +101,14 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         yticks, yticktext = format_ytick(df, spacing, mode, x=x)
         fig.update_yaxes(tickmode='array', tickvals=yticks, ticktext=yticktext)
         if x == 'Any' and level == 'Concepte':
-            fig.update_xaxes(title='')
+            fig.update_xaxes(title='', type='category')
         else:
             fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
-        fig.update_layout(legend = dict(title=None, orientation='h',yanchor='bottom', y=1, xanchor='left', x=0), barmode=barmode)
+        fig.update_layout(legend = dict(title=None, orientation='h',yanchor='bottom', y=1, xanchor='left', x=0))
     else:
         print("Combinació de paràmetres no vàlida per a generar el gràfic.")
         return None
 
     return fig
+
 
