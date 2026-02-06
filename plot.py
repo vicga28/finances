@@ -2,6 +2,7 @@ import math
 import numpy as np
 import plotly.express as px
 import plotly.graph_objs as go
+import streamlit as st
 from datetime import date
 
 from style import format_titol
@@ -54,7 +55,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         category_orders = {}
 
     elif level == 'Categoria':
-        barmode = 'relative'
+        barmode = 'stack'
         mode = 'relative'
         category_orders = {}
 
@@ -64,11 +65,11 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             color_map = col_cat
         else:
             color_map = dict(
-                zip(df['Concepte'].unique(), vivid[:len(df['Concepte'].unique())])
+                zip(df[level].unique(), vivid[:len(df[level].unique())])
             )
 
     else:  # Concepte
-        barmode = 'relative'
+        barmode = 'stack'
         mode = 'relative'
         color_map = {}
 
@@ -100,9 +101,15 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
     # ---------- FORÇAR EIX CATEGÒRIC (CLAU!) ----------
     df[x] = df[x].astype(str)
 
-    # ---------- PLOT ----------
+    # ---------- AGREGACIÓ I PLOT ----------
+    df_plot = (
+        df.groupby([x, level], as_index=False, observed=True)['Import']
+          .sum()
+    )
+    df_plot['Import_format'] = df_plot['Import'].apply(format_titol)
+
     fig = px.bar(
-        df,
+        df_plot,
         x=x,
         y='Import',
         color=level,
@@ -114,6 +121,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             'Import_format': True
         }
     )
+    fig.update_layout(barmode=barmode)
 
     # ---------- LÍNIES EXTRA (només Tipus) ----------
     if level == 'Tipus':
@@ -154,7 +162,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         )
 
     # ---------- Y AXIS ----------
-    yticks, yticktext = format_ytick(df, spacing, mode, x=x)
+    yticks, yticktext = format_ytick(df_plot, spacing, mode, x=x)
     fig.update_yaxes(
         tickmode='array',
         tickvals=yticks,
@@ -245,7 +253,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
 #             fig.add_trace(go.Scatter(x=cost[x], y=cost['Import'],
 #                                         name='Despeses mean', mode = 'lines', hoverinfo='none',
 #                                         hoveron = 'fills', line={'shape':'spline', 'dash':'dot', 'color':'red'}, showlegend=False))
-#         yticks, yticktext = format_ytick(df, spacing, mode, x=x)
+#         yticks, yticktext = format_ytick(df_plot, spacing, mode, x=x)
 #         fig.update_yaxes(tickmode='array', tickvals=yticks, ticktext=yticktext)
 #         if x == 'Any' and level == 'Concepte':
 #             fig.update_xaxes(title='', type='category')
