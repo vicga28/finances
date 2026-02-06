@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import plotly.express as px
-import plotly.graph_objs as go
 import streamlit as st
 from datetime import date
 
@@ -55,7 +54,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         category_orders = {}
 
     elif level == 'Categoria':
-        barmode = 'stack'
+        barmode = 'stack'  # stack explícit per evitar mode grouped a Streamlit Cloud
         mode = 'relative'
         category_orders = {}
 
@@ -69,7 +68,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             )
 
     else:  # Concepte
-        barmode = 'stack'
+        barmode = 'stack'  # stack explícit per evitar mode grouped a Streamlit Cloud
         mode = 'relative'
         color_map = {}
 
