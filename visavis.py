@@ -761,7 +761,6 @@ with tab20:
     with year_col_3:
         st.markdown('### Lloguer')
         yearly_lloguer = fill_dataframe(lloguer_year, year=year)
-        st.dataframe(yearly_lloguer)
         fig_lloguer_year = generate_plot(yearly_lloguer, x='Mes', level='Concepte', spacing=200, year = year, tipus='Lloguer')
         st.plotly_chart(fig_lloguer_year)
         st.write(f"El gast promig en lloguer l'últim any ha estat de **{format_titol(mean_year_lloguer)}**.")
