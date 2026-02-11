@@ -824,6 +824,7 @@ with tab20:
     fig_fixe_year = generate_plot(fixe_df, x='Mes', level='Categoria', spacing = 200, year = year)
     fig_fixe_year_2 = px.bar(fixe_df, x='Mes', y='Import', color='Categoria', hover_data='Categoria', barmode='relative', color_discrete_map= {'Lloguer': vivid[10], 'Serveis':vivid[1]}, category_orders={'Concepte':['Lloguer', 'Serveis']})
     fig_fixe_year_3 = px.bar(fixe_df, x='Mes', y='Import', color='Categoria')
+    fig_fixe_year_3.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
     st.plotly_chart(fig_fixe_year)
     st.plotly_chart(fig_fixe_year_2)
     st.plotly_chart(fig_fixe_year_3)
