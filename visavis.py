@@ -823,8 +823,11 @@ with tab20:
     fixe_df = bf.query('Tipus == "Fixe" and Any == @year')
     fig_fixe_year = generate_plot(fixe_df, x='Mes', level='Categoria', spacing = 200, year = year)
     fig_fixe_year_2 = px.bar(fixe_df, x='Mes', y='Import', color='Categoria', hover_data='Categoria', barmode='relative', color_discrete_map= {'Lloguer': vivid[10], 'Serveis':vivid[1]}, category_orders={'Concepte':['Lloguer', 'Serveis']})
+    fig_fixe_year_3 = px.bar(fixe_df, x='Mes', y='Import', color='Categoria')
     st.plotly_chart(fig_fixe_year)
     st.plotly_chart(fig_fixe_year_2)
+    st.plotly_chart(fig_fixe_year_3)
+
 
     mean_year_fixe = fixe_df.groupby(['Mes']).sum().query('Import != 0')['Import'].mean()
     st.write(f"El gast promig fixe l'últim any ha estat de **{format_titol(mean_year_fixe)}**.")
