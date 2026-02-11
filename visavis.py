@@ -735,6 +735,79 @@ with tab20:
         st.metric(label='Gast promig mensual',
                   value = format_euro((gast_any(bf, year, 'Oci')+gast_any(bf, year, 'Fixe'))/month_actual))
 
+  def generate_plot(df, x, level, spacing, year, tipus=''):
+    df = df.copy()
+    x = x.lower().capitalize()
+    level = level.lower().capitalize()
+    if level == 'Tipus':
+        barmode = 'group'
+        color_map = dict_color
+        category_orders = {}
+        # category_orders = dict_order
+        mode = 'group'
+    elif level == 'Categoria':
+        barmode = 'relative'
+        mode = 'relative'
+        category_orders = {}
+        if (df['Tipus'] == 'Fixe').all():
+            color_map = col_fixe
+        elif (df['Tipus'] == 'Oci').all():
+            color_map = col_cat
+        else:
+            st.write(False)
+            color_map = dict(zip(df['Concepte'].unique(), vivid[0:len(df['Concepte'].unique())]))
+    else:
+        barmode = 'relative'
+        mode = 'relative'
+        color_map = {}
+        if tipus == 'Serveis':
+            category_orders = {'Concepte':['WiFi', 'Electricitat', 'Aigua', 'Gas']}
+        elif tipus == 'Lloguer':
+            category_orders = {'Concepte':['EVO Banc', 'Reformes', 'Comunitat veïns', 'Ajuntament de Barcelona', 'Seguro hogar']}
+        else:
+            category_orders = {}
+    df['Import_format'] = df['Import'].apply(lambda x: format_titol(x))
+    if x in ['Mes', 'Any'] and level in ['Tipus', 'Categoria', 'Concepte']:
+        if x == 'Any' and level == 'Concepte':
+            x_axis = sorted(df.index)
+        else:
+            x_axis = x
+        fig = px.bar(df, x=x_axis, y='Import', color=level, hover_data=level, barmode=barmode, color_discrete_map=color_map, category_orders=category_orders)
+        for trace in fig.data:
+            tipus = trace.name
+            df_tipus = df[df[level] == tipus]
+            trace.customdata = df_tipus[['Import_format']].to_numpy()
+            trace.hovertemplate=f'{tipus}<br>%{{customdata[0]}}<extra></extra>'
+        if level == 'Tipus':
+            income = df.query('Tipus == "Income"')
+            cost = df.query('Tipus != "Income"').groupby(by=[x]).sum().get('Import').reset_index()
+            if x == 'Mes':
+                df['Mes'] = df['Mes'].astype(str)
+                if year == year_actual:
+                    month_range = range(1,month_actual+1)
+                else:
+                    month_range = range(1,13)
+                income = income.query('Mes in @month_range')
+                cost = cost.query('Mes in @month_range')
+            fig.add_trace(go.Scatter(x=income[x], y=income['Import'],
+                                        name='Income mean', mode = 'lines', line={'shape':'spline', 'dash':'dot', 'color':'green'},
+                                        showlegend=False, hoverinfo='none'))
+            fig.add_trace(go.Scatter(x=cost[x], y=cost['Import'],
+                                        name='Despeses mean', mode = 'lines', hoverinfo='none',
+                                        hoveron = 'fills', line={'shape':'spline', 'dash':'dot', 'color':'red'}, showlegend=False))
+        yticks, yticktext = format_ytick(df, spacing, mode, x=x)
+        fig.update_yaxes(tickmode='array', tickvals=yticks, ticktext=yticktext)
+        if x == 'Any' and level == 'Concepte':
+            fig.update_xaxes(title='', type='category')
+        else:
+            fig.update_xaxes(labelalias=dict_month, tickangle=-30, showticklabels=True, type='category', title='')
+        fig.update_layout(legend = dict(title=None, orientation='h',yanchor='bottom', y=1, xanchor='left', x=0))
+    else:
+        print("Combinació de paràmetres no vàlida per a generar el gràfic.")
+        return None
+
+    return fig
+
     # Gràfiques distribució anual per mesos
     yf = bf.query('Any == @year').groupby(by=['Mes', 'Tipus'], as_index=False, observed=True).sum().sort_values(by=['Mes', 'Tipus'])
     fig_summary_year = generate_plot(yf, x='Mes', level='Tipus', spacing=1000, year = year)
@@ -749,7 +822,9 @@ with tab20:
 
     fixe_df = bf.query('Tipus == "Fixe" and Any == @year')
     fig_fixe_year = generate_plot(fixe_df, x='Mes', level='Categoria', spacing = 200, year = year)
+    fig_fixe_year_2 = px.bar(fixe_df, x='Mes', y='Import', color='Categoria', hover_data='Categoria', barmode='relative', color_discrete_map= {'Lloguer': vivid[10], 'Serveis':vivid[1]}, category_orders={'Concepte':['Lloguer', 'Serveis']})
     st.plotly_chart(fig_fixe_year)
+    st.plotly_chart(fig_fixe_year_2)
 
     mean_year_fixe = fixe_df.groupby(['Mes']).sum().query('Import != 0')['Import'].mean()
     st.write(f"El gast promig fixe l'últim any ha estat de **{format_titol(mean_year_fixe)}**.")
