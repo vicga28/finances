@@ -828,6 +828,8 @@ with tab20:
     st.plotly_chart(fig_fixe_year_2)
     st.plotly_chart(fig_fixe_year_3)
 
+    st.dataframe(fixe_df)
+
 
     mean_year_fixe = fixe_df.groupby(['Mes']).sum().query('Import != 0')['Import'].mean()
     st.write(f"El gast promig fixe l'últim any ha estat de **{format_titol(mean_year_fixe)}**.")
