@@ -231,6 +231,8 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         if level == 'Tipus':
             income = df.query('Tipus == "Income"')
             cost = df.query('Tipus != "Income"').groupby(by=[x]).sum().get('Import').reset_index()
+            benefici = income.merge(gast, on='Any', suffixes=('_income', '_gast'))
+            benefici['Benefici'] = benefici['Import_income'] - benefici['Import_gast']
             if x == 'Mes':
                 df['Mes'] = df['Mes'].astype(str)
                 if year == year_actual:
@@ -239,12 +241,15 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
                     month_range = range(1,13)
                 income = income.query('Mes in @month_range')
                 cost = cost.query('Mes in @month_range')
+                benefici = benefici.query('Mes in @month_range')
             fig.add_trace(go.Scatter(x=income[x], y=income['Import'],
                                         name='Income mean', mode = 'lines', line={'shape':'spline', 'dash':'dot', 'color':'green'},
                                         showlegend=False, hoverinfo='none'))
             fig.add_trace(go.Scatter(x=cost[x], y=cost['Import'],
                                         name='Despeses mean', mode = 'lines', hoverinfo='none',
                                         hoveron = 'fills', line={'shape':'spline', 'dash':'dot', 'color':'red'}, showlegend=False))
+            fig.add_trace(go.Scatter(x=benefici[x], y=benefici['Benefici'],
+                                        name='Benefici', mode='lines', line={'shape':'spline', 'dash':'dot', 'color':''yellow'}, showlegend=False))
         yticks, yticktext = format_ytick(df, spacing, mode, x=x)
         fig.update_yaxes(tickmode='array', tickvals=yticks, ticktext=yticktext)
         if x == 'Any' and level == 'Concepte':
@@ -257,6 +262,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         return None
 
     return fig
+
 
 
 
