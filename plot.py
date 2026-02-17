@@ -87,6 +87,8 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             cost = df.query('Tipus != "Income"').groupby(by=[x]).sum().get('Import').reset_index()
             benefici = income.merge(cost, on=x, suffixes=('_income', '_gast'))
             benefici['Benefici'] = benefici['Import_income'] - benefici['Import_gast']
+            # benefici = benefici.sort_values('Any')
+            benefici['Benefici_acumulat'] = benefici['Benefici'].cumsum()
             if x == 'Mes':
                 df['Mes'] = df['Mes'].astype(str)
                 if year == year_actual:
@@ -102,7 +104,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
             fig.add_trace(go.Scatter(x=cost[x], y=cost['Import'],
                                         name='Despeses mean', mode = 'lines', hoverinfo='none',
                                         hoveron = 'fills', line={'shape':'spline', 'dash':'dot', 'color':'red'}, showlegend=False))
-            fig.add_trace(go.Scatter(x=benefici[x], y=benefici['Benefici'],
+            fig.add_trace(go.Scatter(x=benefici[x], y=benefici['Benefici_acumulat'],
                                         name='Benefici', mode='lines', line={'shape':'spline', 'dash':'dot', 'color':'yellow'}, showlegend=False))
         yticks, yticktext = format_ytick(df, spacing, mode, x=x)
         fig.update_yaxes(tickmode='array', tickvals=yticks, ticktext=yticktext)
@@ -116,6 +118,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         return None
 
     return fig
+
 
 
 
