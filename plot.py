@@ -105,7 +105,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
                                         name='Despeses mean', mode = 'lines', hoverinfo='none',
                                         hoveron = 'fills', line={'shape':'spline', 'dash':'dot', 'color':'red'}, showlegend=False))
             fig.add_trace(go.Scatter(x=benefici[x], y=benefici['Benefici_acumulat'],
-                                        name='Benefici', mode='lines', line={'shape':'spline', 'dash':'dot', 'color':'gold'}, showlegend=True, hoverinfo=benefici['Benefici_acumular']))
+                                        name='Benefici', mode='lines', line={'shape':'spline', 'dash':'dot', 'color':'gold'}, showlegend=True, hoverinfo=benefici['Benefici_acumulat']))
         yticks, yticktext = format_ytick(df, spacing, mode, x=x)
         fig.update_yaxes(tickmode='array', tickvals=yticks, ticktext=yticktext)
         if x == 'Any' and level == 'Concepte':
@@ -118,6 +118,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         return None
 
     return fig
+
 
 
 
