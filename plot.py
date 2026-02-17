@@ -85,7 +85,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         if level == 'Tipus':
             income = df.query('Tipus == "Income"')
             cost = df.query('Tipus != "Income"').groupby(by=[x]).sum().get('Import').reset_index()
-            benefici = income.merge(cost, on='Any', suffixes=('_income', '_gast'))
+            benefici = income.merge(cost, on=x, suffixes=('_income', '_gast'))
             benefici['Benefici'] = benefici['Import_income'] - benefici['Import_gast']
             if x == 'Mes':
                 df['Mes'] = df['Mes'].astype(str)
@@ -116,6 +116,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         return None
 
     return fig
+
 
 
 
