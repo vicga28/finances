@@ -39,152 +39,6 @@ def format_ytick(df, spacing=500, mode='group', x='Mes'):
     yticktext = [format_titol(y) for y in yticks]
     return yticks, yticktext
 
-# def generate_plot(df, x, level, spacing, year, tipus=''):
-#     df = df.copy()
-
-#     # Normalitzar noms
-#     x = x.lower().capitalize()
-#     level = level.lower().capitalize()
-
-#     # ---------- MODE I COLORS ----------
-#     if level == 'Tipus':
-#         barmode = 'group'
-#         mode = 'group'
-#         color_map = dict_color
-#         category_orders = {}
-
-#     elif level == 'Categoria':
-#         barmode = 'relative'
-#         mode = 'relative'
-#         category_orders = {}
-
-#         if (df['Tipus'] == 'Fixe').all():
-#             color_map = col_fixe
-#         elif (df['Tipus'] == 'Oci').all():
-#             color_map = col_cat
-#         else:
-#             color_map = dict(
-#                 zip(df['Concepte'].unique(), vivid[:len(df['Concepte'].unique())])
-#             )
-
-#     else:  # Concepte
-#         barmode = 'relative'
-#         mode = 'relative'
-#         color_map = {}
-
-#         if tipus == 'Serveis':
-#             category_orders = {
-#                 'Concepte': ['WiFi', 'Electricitat', 'Aigua', 'Gas']
-#             }
-#         elif tipus == 'Lloguer':
-#             category_orders = {
-#                 'Concepte': [
-#                     'EVO Banc',
-#                     'Reformes',
-#                     'Comunitat veïns',
-#                     'Ajuntament de Barcelona',
-#                     'Seguro hogar'
-#                 ]
-#             }
-#         else:
-#             category_orders = {}
-
-#     # ---------- FORMAT IMPORT ----------
-#     df['Import_format'] = df['Import'].apply(format_titol)
-
-#     # ---------- VALIDACIÓ ----------
-#     if x not in ['Mes', 'Any'] or level not in ['Tipus', 'Categoria', 'Concepte']:
-#         st.error("Combinació de paràmetres no vàlida per generar el gràfic.")
-#         return None
-
-#     # ---------- FORÇAR EIX CATEGÒRIC (CLAU!) ----------
-#     df[x] = df[x].astype(str)
-
-#     # ---------- PLOT ----------
-#     fig = px.bar(
-#         df,
-#         x=x,
-#         y='Import',
-#         color=level,
-#         barmode=barmode,
-#         color_discrete_map=color_map,
-#         category_orders=category_orders,
-#         hover_data={
-#             level: True,
-#             'Import_format': True
-#         }
-#     )
-
-#     # ---------- LÍNIES EXTRA (només Tipus) ----------
-#     if level == 'Tipus':
-#         income = df.query('Tipus == "Income"')
-#         cost = (
-#             df.query('Tipus != "Income"')
-#               .groupby(by=[x], as_index=False)['Import']
-#               .sum()
-#         )
-
-#         if x == 'Mes':
-#             if year == year_actual:
-#                 month_range = list(map(str, range(1, month_actual + 1)))
-#             else:
-#                 month_range = list(map(str, range(1, 13)))
-
-#             income = income[income['Mes'].isin(month_range)]
-#             cost = cost[cost['Mes'].isin(month_range)]
-
-#         fig.add_scatter(
-#             x=income[x],
-#             y=income['Import'],
-#             name='Income mean',
-#             mode='lines',
-#             line=dict(shape='spline', dash='dot', color='green'),
-#             showlegend=False,
-#             hoverinfo='none'
-#         )
-
-#         fig.add_scatter(
-#             x=cost[x],
-#             y=cost['Import'],
-#             name='Despeses mean',
-#             mode='lines',
-#             line=dict(shape='spline', dash='dot', color='red'),
-#             showlegend=False,
-#             hoverinfo='none'
-#         )
-
-#     # ---------- Y AXIS ----------
-#     yticks, yticktext = format_ytick(df, spacing, mode, x=x)
-#     fig.update_yaxes(
-#         tickmode='array',
-#         tickvals=yticks,
-#         ticktext=yticktext
-#     )
-
-#     # ---------- X AXIS ----------
-#     fig.update_xaxes(
-#         labelalias=dict_month,
-#         tickangle=-30,
-#         showticklabels=True,
-#         type='category',
-#         title=''
-#     )
-
-#     # ---------- LAYOUT ----------
-#     fig.update_layout(
-#         legend=dict(
-#             title=None,
-#             orientation='h',
-#             yanchor='bottom',
-#             y=1,
-#             xanchor='left',
-#             x=0
-#         )
-#     )
-
-#     return fig
-
-
 def generate_plot(df, x, level, spacing, year, tipus=''):
     df = df.copy()
     x = x.lower().capitalize()
@@ -231,7 +85,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         if level == 'Tipus':
             income = df.query('Tipus == "Income"')
             cost = df.query('Tipus != "Income"').groupby(by=[x]).sum().get('Import').reset_index()
-            benefici = income.merge(gast, on='Any', suffixes=('_income', '_gast'))
+            benefici = income.merge(cost, on='Any', suffixes=('_income', '_gast'))
             benefici['Benefici'] = benefici['Import_income'] - benefici['Import_gast']
             if x == 'Mes':
                 df['Mes'] = df['Mes'].astype(str)
@@ -262,6 +116,7 @@ def generate_plot(df, x, level, spacing, year, tipus=''):
         return None
 
     return fig
+
 
 
 
