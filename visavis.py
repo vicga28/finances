@@ -231,6 +231,7 @@ def add_date(df):
 
 def create_table(df, lim_cat,  month = month_actual, year = year_actual):
     df = df.copy()
+    df = df[df['Tipus'] == 'Oci']
     df = add_date(df)
     df = df[df['Date'] < date.today()].sort_values('Date', ascending=False)
     df_monthly = pd.DataFrame(columns=['Import'], index=id_cat)
