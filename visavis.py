@@ -181,6 +181,7 @@ def generate_tipus_df(df, id_tip = id_tip):
 @st.cache_data
 def generate_cat_df(bf, id_cat = id_cat):
     mf = bf.copy()
+    mf = mf[mf['Tipus'] == 'Oci']
     mf['Data'] = mf['Any'].astype('string') + '-' + mf['Mes'].astype('string')
     mf['Data_clean'] = mf['Data'].apply(neteja_data)
     mf['Date'] = pd.to_datetime(mf['Data_clean'], format='%Y-%m')
