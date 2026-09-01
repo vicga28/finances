@@ -648,6 +648,7 @@ def create_serveis(df = df, serveis = serveis, year_actual = year, plot = False)
     fixe_serveis_global = add_date(fixe_serveis_global)
     fixe_serveis_global = fixe_serveis_global.drop(columns=['Tipus', 'Dia', 'Categoria', 'Obs']).set_index(['Date'])
     fixe_serveis_year = fixe_serveis_global[fixe_serveis_global['Any'] == year_actual]
+    fixe_serveis_global = fixe_serveis_globar.sort_index()
     if plot:
         fig_lloguer_global = px.bar(fixe_serveis_global, x=fixe_serveis_global.index, y='Import', color='Concepte')
         st.plotly_chart(fig_lloguer_global)
